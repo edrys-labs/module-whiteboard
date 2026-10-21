@@ -120,15 +120,21 @@ async function mountShared() {
     initialData: boardContent(room),
     renderTopRightUI: syncBadge(true),
     excalidrawAPI: (excalidrawAPI) => {
-      if (api) return
-      api = excalidrawAPI
-      // the e2e tests (edrys-module-tests) read the scene through it
-      window.excalidrawAPI = api
-      try {
-        bind()
-      } catch (error) {
-        showError(error)
-      }
+      // Excalidraw hands over its API before it has mounted, and drops updateScene calls until
+      // then (React: "Can't call setState on a component that is not yet mounted"). Bind on its
+      // first change after loading initialData.
+      const stop = excalidrawAPI.onChange((_, appState) => {
+        if (api || appState.isLoading) return
+        stop()
+        api = excalidrawAPI
+        try {
+          bind()
+          // the e2e tests (edrys-module-tests) read the scene through it
+          window.excalidrawAPI = api
+        } catch (error) {
+          showError(error)
+        }
+      })
     },
     onPointerUpdate: (payload) => sharePointer(awareness, payload),
   })
