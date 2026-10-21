@@ -1,0 +1,25 @@
+html,
+body,
+#board {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+}
+
+#status {
+  padding: 1rem;
+  opacity: 0.7;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #121212;
+    color: #e3e3e8;
+  }
+}

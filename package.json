@@ -1,0 +1,28 @@
+{
+  "name": "edrys-module-whiteboard",
+  "version": "2.0.0",
+  "scripts": {
+    "watch": "npx parcel serve src/index.html --open --port 3002",
+    "build": "npx parcel build src/index.html --no-scope-hoist --dist-dir docs --public-url ./ && cp -r node_modules/@excalidraw/excalidraw/dist/prod/fonts docs/"
+  },
+  "author": "",
+  "license": "MIT",
+  "description": "Collaborative Excalidraw whiteboard module for Edrys classrooms, one board per room",
+  "devDependencies": {
+    "buffer": "^6.0.3",
+    "parcel": "^2.13.0",
+    "process": "^0.11.10"
+  },
+  "dependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "yjs": "^13.6.30"
+  },
+  "alias": {
+    "yjs": "./src/yjs-global.js"
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
+  }
+}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Live Whiteboard</title>
+
+    <meta
+      name="description"
+      content="Collaborative whiteboard for Edrys classrooms, one board per room, built on Excalidraw.<br/>For more information visit: <a href='https://github.com/edrys-labs/module-whiteboard' target='_blank'>https://github.com/edrys-labs/module-whiteboard</a>"
+    />
+
+    <meta name="show-in" content="*" />
+
+    <!-- loaded first: it provides window.Y, which the bundle uses as its yjs (src/yjs-global.js) -->
+    <script src="https://edrys-labs.github.io/module/edrys.js"></script>
+
+    <link rel="stylesheet" href="./whiteboard.css" />
+  </head>
+
+  <body>
+    <p id="status">Loading whiteboard…</p>
+    <div id="board" hidden></div>
+
+    <script type="module" src="./whiteboard.js"></script>
+  </body>
+</html>
