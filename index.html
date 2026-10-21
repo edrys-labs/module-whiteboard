@@ -9,6 +9,17 @@
       content="Live whiteboard module based on Excalidraw"
     />
     <meta name="show-in" content="*" />
+    <meta
+      name="module-config"
+      content="{
+        'config': {
+          'server': {
+            'type': 'text',
+            'hint': 'Address of the Excalidraw app, e.g. https://draw.example.org (empty: https://excalidraw.com). A self-hosted instance keeps drawings off excalidraw.com.',
+          },
+        },
+      }"
+    />
     <title>Live Whiteboard</title>
 
     <script src="http://localhost:6999/module/edrys.js"></script>
@@ -43,7 +54,23 @@
     ></iframe>
 
     <script>
-      const EXCALIDRAW = 'https://excalidraw.com'
+      const DEFAULT_SERVER = 'https://excalidraw.com'
+
+      // The same for every role: peers on different servers would not share a board.
+      function server() {
+        const value = String((Edrys.module.config || {}).server || '').trim()
+        if (!value) return DEFAULT_SERVER
+        let url
+        try {
+          url = new URL(value)
+        } catch (e) {}
+        if (!url || !['http:', 'https:'].includes(url.protocol)) {
+          throw new Error(
+            `"${value}" is not a web address. Set server in the module settings to one like https://draw.example.org, or leave it empty for excalidraw.com.`
+          )
+        }
+        return url.origin + url.pathname.replace(/\/+$/, '')
+      }
 
       async function sha256Hex(text) {
         if (!window.crypto?.subtle) throw new Error('this page must be served over https.')
@@ -56,6 +83,7 @@
         const status = document.getElementById('status')
         const board = document.getElementById('board')
         try {
+          const base = server()
           // Edrys.liveRoom is the room's state map: it has no name and may be missing
           const room = Edrys.liveUser.room
           // Excalidraw's server only sees the id, so it must not reveal the key
@@ -65,7 +93,7 @@
             status.hidden = true
             board.hidden = false
           }
-          board.src = `${EXCALIDRAW}/#room=${id},${key}`
+          board.src = `${base}/#room=${id},${key}`
         } catch (e) {
           status.textContent = `Could not open the whiteboard: ${e.message}`
         }
