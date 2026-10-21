@@ -7,6 +7,13 @@ import { bindBoard, boardContent, sharePointer } from './sync'
 // awareness of the room (Edrys.getState): pointers, selections and names
 const AWARENESS = 'whiteboard'
 
+// Every boolean is opt-in (as `synchronize` in the other edrys modules):
+// edrys's settings form saves `false` for each boolean the teacher leaves
+// alone, so a default-true flag would be switched off by merely saving it.
+const DEFAULTS = {
+  synchronize: false,
+}
+
 const COLORS = ['#e03131', '#2f9e44', '#1971c2', '#f08c00', '#9c36b5', '#0c8599', '#e8590c', '#5c940d']
 
 // fonts are copied next to the build (npm run build), so the board needs no CDN
@@ -20,6 +27,17 @@ function showError(error) {
   status.textContent = `Could not open the whiteboard: ${error.message || error}`
   status.hidden = false
   container.hidden = true
+}
+
+// Edrys leaves a config that isn't JSON as a string, and the settings form
+// saves blank fields as '': both fall back to the defaults.
+function readConfig() {
+  const config = Edrys.module.config
+  const given =
+    config && typeof config === 'object'
+      ? Object.fromEntries(Object.entries(config).filter(([, v]) => v !== '' && v != null))
+      : {}
+  return { ...DEFAULTS, ...given }
 }
 
 /** A colour per user, the same on every peer. */
@@ -46,60 +64,86 @@ function roomState() {
 
 const theme = () => (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
 
-// The module frame is re-created on every room change, so all of this runs once.
-Edrys.onReady(async () => {
-  try {
-    const room = await roomState()
-    const awareness = Edrys.getState(AWARENESS, 'Awareness')
-    const name = Edrys.liveUser.displayName || Edrys.username
-    awareness.setLocalStateField('user', { name, color: colorOf(Edrys.username) })
+/** Whether the board is shared, shown in Excalidraw's top-right corner. */
+function syncBadge(sync) {
+  const label = sync ? 'Shared with this room' : 'Only you see this board'
+  return () => createElement('span', { className: 'sync-badge', 'data-sync': sync ? 'shared' : 'local' }, label)
+}
 
-    // The room's state map can be replaced after we got it (edrys-Lite hands the module an
-    // older doc first, and recreates a room's map when it goes missing). Bind to whichever
-    // map is current, and rebind when it changes.
-    let api
-    let bound
-    let unbind
-    const bind = () => {
-      const current = Edrys.getState()
-      if (!api || !current || current === bound) return
-      unbind?.()
-      bound = current
-      unbind = bindBoard(api, current, awareness)
+/** Show the editor. Excalidraw sizes itself to the container when it mounts, so show it first. */
+function mount(props) {
+  status.hidden = true
+  container.hidden = false
+  createRoot(container).render(createElement(Excalidraw, { theme: theme(), ...props }))
+}
+
+/** A board of this peer's own: nothing is shared. */
+function mountLocal() {
+  mount({
+    renderTopRightUI: syncBadge(false),
+    excalidrawAPI: (api) => {
+      // the e2e tests (edrys-module-tests) read the scene through it
+      window.excalidrawAPI = api
+    },
+  })
+}
+
+/** The room's board, drawn on together. */
+async function mountShared() {
+  const room = await roomState()
+  const awareness = Edrys.getState(AWARENESS, 'Awareness')
+  const name = Edrys.liveUser.displayName || Edrys.username
+  awareness.setLocalStateField('user', { name, color: colorOf(Edrys.username) })
+
+  // The room's state map can be replaced after we got it (edrys-Lite hands the module an
+  // older doc first, and recreates a room's map when it goes missing). Bind to whichever
+  // map is current, and rebind when it changes.
+  let api
+  let bound
+  let unbind
+  const bind = () => {
+    const current = Edrys.getState()
+    if (!api || !current || current === bound) return
+    unbind?.()
+    bound = current
+    unbind = bindBoard(api, current, awareness)
+  }
+  Edrys.onUpdate(() => {
+    try {
+      bind()
+    } catch (error) {
+      showError(error)
     }
-    Edrys.onUpdate(() => {
+  })
+
+  mount({
+    initialData: boardContent(room),
+    renderTopRightUI: syncBadge(true),
+    excalidrawAPI: (excalidrawAPI) => {
+      if (api) return
+      api = excalidrawAPI
+      // the e2e tests (edrys-module-tests) read the scene through it
+      window.excalidrawAPI = api
       try {
         bind()
       } catch (error) {
         showError(error)
       }
-    })
+    },
+    onPointerUpdate: (payload) => sharePointer(awareness, payload),
+  })
 
-    const element = createElement(Excalidraw, {
-      theme: theme(),
-      initialData: boardContent(room),
-      excalidrawAPI: (excalidrawAPI) => {
-        if (api) return
-        api = excalidrawAPI
-        // the e2e tests (edrys-module-tests) read the scene through it
-        window.excalidrawAPI = api
-        try {
-          bind()
-        } catch (error) {
-          showError(error)
-        }
-      },
-      onPointerUpdate: (payload) => sharePointer(awareness, payload),
-    })
-    // Excalidraw sizes itself to the container when it mounts, so show it first
-    status.hidden = true
-    container.hidden = false
-    createRoot(container).render(element)
+  addEventListener('pagehide', () => {
+    unbind?.()
+    awareness.setLocalState(null)
+  })
+}
 
-    addEventListener('pagehide', () => {
-      unbind?.()
-      awareness.setLocalState(null)
-    })
+// The module frame is re-created on every room change, so all of this runs once.
+Edrys.onReady(async () => {
+  try {
+    if (readConfig().synchronize === true) await mountShared()
+    else mountLocal()
   } catch (error) {
     showError(error)
   }

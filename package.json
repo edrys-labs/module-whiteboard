@@ -5,7 +5,7 @@
     "watch": "npx parcel serve src/index.html --open --port 3002",
     "build": "npx parcel build src/index.html --no-scope-hoist --dist-dir docs --public-url ./ && cp -r node_modules/@excalidraw/excalidraw/dist/prod/fonts docs/"
   },
-  "author": "",
+  "author": "edrys-labs",
   "license": "MIT",
   "description": "Collaborative Excalidraw whiteboard module for Edrys classrooms, one board per room",
   "devDependencies": {

@@ -12,6 +12,21 @@ body {
   font-family: system-ui, sans-serif;
 }
 
+/* in Excalidraw's top-right corner, next to the library button */
+.sync-badge {
+  align-self: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: #fff;
+  background: #6b6b6b;
+}
+
+.sync-badge[data-sync='shared'] {
+  background: #1f7a45;
+}
+
 #status {
   padding: 1rem;
   opacity: 0.7;

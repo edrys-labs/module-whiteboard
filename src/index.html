@@ -13,6 +13,18 @@
 
     <meta name="show-in" content="*" />
 
+    <meta
+      name="module-config"
+      content="{
+        'config': {
+          'synchronize': {
+            'type': 'boolean',
+            'hint': 'Share one board across all peers in the room, drawn on together in real time; otherwise each peer draws on their own board'
+          },
+        },
+      }"
+    />
+
     <!-- loaded first: it provides window.Y, which the bundle uses as its yjs (src/yjs-global.js) -->
     <script src="https://edrys-labs.github.io/module/edrys.js"></script>
 
