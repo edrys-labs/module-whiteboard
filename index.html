@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <meta
@@ -12,43 +11,7 @@
     <meta name="show-in" content="*" />
     <title>Live Whiteboard</title>
 
-    <script src="https://edrys-labs.github.io/module/edrys.js"></script>
-
-    <script
-      defer
-      src="https://edrys-labs.github.io/module/vendor/alpine.min.js"
-    ></script>
-  </head>
-
-  <body>
-    <template
-      x-if="!!edrys && !!url"
-      x-data="{ edrys: undefined, url: undefined }"
-      x-init="Edrys.onUpdate((e) => { 
-                edrys = {...e} 
-                let room = encodeURIComponent(edrys.liveRoom.name).replace(/[\W_]+/g, '')
-                            
-                let hashValue = async (val) => {
-                  const encoder = new TextEncoder();
-                  const data = encoder.encode(val);
-                  const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-                  const hashArray = Array.from(new Uint8Array(hashBuffer));
-                  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                  return hashHex.substring(0, 22);
-                }
-                           
-                hashValue(edrys.class_id + room).then((key) => {
-                  url = `https://excalidraw.com/#room=${edrys.class_id}-${room},${key}`
-                });
-              })"
-    >
-      <iframe
-        :src="url"
-        frameborder="0"
-        sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"
-        style="width: 100%; height: 100%"
-      ></iframe>
-    </template>
+    <script src="http://localhost:6999/module/edrys.js"></script>
 
     <style>
       body,
@@ -58,10 +21,54 @@
         width: 100%;
         margin: 0;
         padding: 0;
+        border: 0;
       }
       body {
         overflow: hidden;
       }
+      #status {
+        padding: 1rem;
+        opacity: 0.7;
+      }
     </style>
+  </head>
+
+  <body>
+    <p id="status">Loading whiteboard…</p>
+    <iframe
+      id="board"
+      hidden
+      sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"
+    ></iframe>
+
+    <script>
+      const EXCALIDRAW = 'https://excalidraw.com'
+
+      async function sha256Hex(text) {
+        if (!window.crypto?.subtle) throw new Error('this page must be served over https.')
+        const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+        return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, '0')).join('')
+      }
+
+      // The module frame is re-created on every room change, so the board is set once.
+      Edrys.onReady(async () => {
+        const status = document.getElementById('status')
+        const board = document.getElementById('board')
+        try {
+          // Edrys.liveRoom is the room's state map: it has no name and may be missing
+          const room = Edrys.liveUser.room
+          // Excalidraw's server only sees the id, so it must not reveal the key
+          const id = (await sha256Hex('room:' + Edrys.class_id + room)).substring(0, 20)
+          const key = (await sha256Hex('key:' + Edrys.class_id + room)).substring(0, 22)
+          board.onload = () => {
+            status.hidden = true
+            board.hidden = false
+          }
+          board.src = `${EXCALIDRAW}/#room=${id},${key}`
+        } catch (e) {
+          status.textContent = `Could not open the whiteboard: ${e.message}`
+        }
+      })
+    </script>
   </body>
 </html>
