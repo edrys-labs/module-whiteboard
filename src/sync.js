@@ -1,4 +1,4 @@
-import { CaptureUpdateAction, hashElementsVersion, reconcileElements } from '@excalidraw/excalidraw'
+import { CaptureUpdateAction, reconcileElements } from '@excalidraw/excalidraw'
 
 // Keys in the room's state map. Each element and each pasted image is its own
 // key holding plain JSON, so a peer that joins creates no shared type: it
@@ -33,17 +33,21 @@ export function bindBoard(api, room, awareness) {
   // version of each element as last written or received, so we neither echo nor miss changes
   const versions = new Map()
   const files = new Set()
-  let sceneVersion = -1
   let selection = ''
 
   const sharedElements = (keys) =>
     keys.filter((key) => key.startsWith(ELEMENT)).map((key) => room.get(key)).filter(Boolean)
 
   function applyRemote(elements) {
-    for (const element of elements) versions.set(element.id, element.version)
     const merged = reconcileElements(api.getSceneElementsIncludingDeleted(), elements, api.getAppState())
+    const kept = new Map(merged.map((element) => [element.id, element]))
+    // Record only the remote elements that won. Where the local copy was kept (newer, being
+    // edited, or the lower versionNonce while the room's map kept the other one), it stays
+    // unrecorded, so onChange writes it back and every peer ends up with the same element.
+    for (const element of elements) {
+      if (kept.get(element.id) === element) versions.set(element.id, element.version)
+    }
     api.updateScene({ elements: merged, captureUpdate: CaptureUpdateAction.NEVER })
-    sceneVersion = hashElementsVersion(api.getSceneElementsIncludingDeleted())
   }
 
   function applyRemoteFiles(keys) {
@@ -70,11 +74,8 @@ export function bindBoard(api, room, awareness) {
   room.observe(onRoom)
 
   const unsubscribe = api.onChange((_, appState, sceneFiles) => {
-    const all = api.getSceneElementsIncludingDeleted()
-    const version = hashElementsVersion(all)
-    const changed = version === sceneVersion ? [] : all.filter((e) => (versions.get(e.id) ?? -1) < e.version)
+    const changed = api.getSceneElementsIncludingDeleted().filter((e) => (versions.get(e.id) ?? -1) < e.version)
     const newFiles = Object.values(sceneFiles).filter((file) => !files.has(file.id))
-    sceneVersion = version
 
     if (changed.length || newFiles.length) {
       Edrys.updateState(() => {
@@ -123,6 +124,6 @@ export function bindBoard(api, room, awareness) {
 
 /** Show this peer's pointer to the others (Excalidraw's onPointerUpdate). */
 export function sharePointer(awareness, { pointer, button }) {
-  awareness.setLocalStateField('pointer', pointer)
-  awareness.setLocalStateField('button', button)
+  // one awareness update (and message) per move
+  awareness.setLocalState({ ...awareness.getLocalState(), pointer, button })
 }
