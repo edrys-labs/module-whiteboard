@@ -2,7 +2,10 @@
 
 A whiteboard module for [Edrys-Lite](https://github.com/edrys-labs/edrys-Lite) classrooms, built on [Excalidraw](https://excalidraw.com). With `synchronize`, everyone in a room draws on one board in real time. Each room has its own board.
 
-![screenshot](./screenshot.png)
+![A shared board with a rectangle and an ellipse, another peer's pointer with its name, and the "Shared with this room" badge](./screenshot.png)
+
+The board follows the classroom's light or dark theme (the operating system's when opened on its own), in
+Excalidraw's own light and dark look.
 
 ## Usage
 

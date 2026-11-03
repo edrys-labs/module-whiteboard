@@ -1,3 +1,39 @@
+/* Excalidraw brings its own UI, so edrys-module.css (which styles every
+   button and input) is not loaded; the few colours of the module's own parts
+   are the same as there, for the theme edrys.js puts on <html data-theme>. */
+:root {
+  --bg: #ffffff;
+  --text: #3b424d;
+  --pill: #f0f1f4;
+  --on-pill: #3b424d;
+  --pill-dot: #5f6773;
+  --ok-pill: #e4f8e7;
+  --on-ok-pill: #005725;
+  --ok: #399d57;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #20252d;
+    --text: #d4d8de;
+    --pill: #2c333d;
+    --on-pill: #d4d8de;
+    --pill-dot: #9aa3b0;
+    --ok-pill: #1f4127;
+    --on-ok-pill: #a8ebb5;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #20252d;
+  --text: #d4d8de;
+  --pill: #2c333d;
+  --on-pill: #d4d8de;
+  --pill-dot: #9aa3b0;
+  --ok-pill: #1f4127;
+  --on-ok-pill: #a8ebb5;
+}
+
 html,
 body,
 #board {
@@ -9,32 +45,42 @@ body,
 
 body {
   overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
   font-family: system-ui, sans-serif;
 }
 
 /* in Excalidraw's top-right corner, next to the library button */
 .sync-badge {
+  display: inline-flex;
   align-self: center;
-  padding: 0.25rem 0.5rem;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  background: var(--pill);
+  color: var(--on-pill);
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
-  color: #fff;
-  background: #6b6b6b;
+}
+.sync-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pill-dot);
 }
 
 .sync-badge[data-sync='shared'] {
-  background: #1f7a45;
+  background: var(--ok-pill);
+  color: var(--on-ok-pill);
+}
+.sync-badge[data-sync='shared']::before {
+  background: var(--ok);
 }
 
 #status {
   padding: 1rem;
   opacity: 0.7;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #121212;
-    color: #e3e3e8;
-  }
 }

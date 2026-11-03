@@ -62,7 +62,10 @@ function roomState() {
   })
 }
 
-const theme = () => (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+// the classroom's light or dark theme, which edrys.js puts on <html>; the
+// device's when the page is opened on its own
+const darkScheme = matchMedia('(prefers-color-scheme: dark)')
+const theme = () => document.documentElement.dataset.theme || (darkScheme.matches ? 'dark' : 'light')
 
 /** Whether the board is shared, shown in Excalidraw's top-right corner. */
 function syncBadge(sync) {
@@ -70,11 +73,18 @@ function syncBadge(sync) {
   return () => createElement('span', { className: 'sync-badge', 'data-sync': sync ? 'shared' : 'local' }, label)
 }
 
-/** Show the editor. Excalidraw sizes itself to the container when it mounts, so show it first. */
+/**
+ * Show the editor. Excalidraw sizes itself to the container when it mounts, so show it first.
+ * Its theme is a prop: render again with the same props when the classroom's theme changes.
+ */
 function mount(props) {
   status.hidden = true
   container.hidden = false
-  createRoot(container).render(createElement(Excalidraw, { theme: theme(), ...props }))
+  const root = createRoot(container)
+  const render = () => root.render(createElement(Excalidraw, { theme: theme(), ...props }))
+  render()
+  Edrys.onTheme?.(render)
+  darkScheme.addEventListener('change', render)
 }
 
 /** A board of this peer's own: nothing is shared. */
