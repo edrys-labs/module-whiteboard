@@ -102,8 +102,15 @@ function mountLocal() {
 async function mountShared() {
   const room = await roomState()
   const awareness = Edrys.getState(AWARENESS, 'Awareness')
-  const name = Edrys.liveUser.displayName || Edrys.username
-  awareness.setLocalStateField('user', { name, color: colorOf(Edrys.username) })
+  let published
+  const publishUser = () => {
+    const name = Edrys.liveUser?.username || Edrys.liveUser?.displayName || Edrys.username
+    if (name === published) return
+    published = name
+    awareness.setLocalStateField('user', { name, color: colorOf(Edrys.username) })
+  }
+  publishUser()
+  Edrys.onUpdate(publishUser)
 
   // The room's state map can be replaced after we got it (edrys-Lite hands the module an
   // older doc first, and recreates a room's map when it goes missing). Bind to whichever
